@@ -1,0 +1,183 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <cmath>
+
+using namespace std;
+
+int generateRandomNumber(int gridsize);
+int generatePowerOfTwo();
+void printArray(const vector<vector<int>>& arr);
+int calculateFilledSpaces(const vector<vector<int>>& arr, vector<int>& filledTiles, int gridsize);
+int calculateTileNumber(int i, int j, int gridsize);
+void shifttiles(int initialtile, int finaltile, int gridsize, int* invalid, vector<vector<int>>& arr);
+int calculatetileindexxdir(int tilevalue, int gridsize);
+int calculatetileindexydir(int tilevalue, int gridsize);
+bool wincase(const vector<vector<int>>& arr, int gridsize);
+
+// Main Function
+int main() {
+    int gridsize;
+    cout << "Enter the grid size: ";
+    cin >> gridsize;
+
+    vector<vector<int>> arr(gridsize, vector<int>(gridsize, 0));
+
+    printArray(arr);
+
+    cout << "Two random tiles will be filled with random powers of two.\n";
+
+    srand(time(0));
+
+    // Fill two tiles with unique random positions
+    int randomx1 = generateRandomNumber(gridsize);
+    int randomy1 = generateRandomNumber(gridsize);
+    int randomx2 = generateRandomNumber(gridsize);
+    int randomy2 = generateRandomNumber(gridsize);
+
+    while (randomx1 == randomx2 && randomy1 == randomy2) {
+        randomx2 = generateRandomNumber(gridsize);
+        randomy2 = generateRandomNumber(gridsize);
+    }
+
+    arr[randomx1][randomy1] = generatePowerOfTwo();
+    arr[randomx2][randomy2] = generatePowerOfTwo();
+
+    printArray(arr);
+
+    vector<int> filledTiles;
+    int loss = 0;
+    int invalid = 0;
+
+    do {
+        // Check for win condition
+        if (wincase(arr, gridsize)) {
+            cout << "YOU BEAT US. YOU ARE VICTORIOUS!\n";
+            break;
+        }
+
+        cout << "Enter the initial and final tile (1-" << gridsize * gridsize << "):\n";
+        int initialtile, finaltile;
+        cin >> initialtile >> finaltile;
+
+        if (initialtile < 1 || finaltile < 1 || initialtile > gridsize * gridsize || finaltile > gridsize * gridsize) {
+            cout << "Invalid tiles. Try again.\n";
+            invalid++;
+            if (invalid == 3) {
+                cout << "Too many invalid moves. You lost the game!\n";
+                loss = 1;
+            }
+            continue;
+        }
+
+        shifttiles(initialtile, finaltile, gridsize, &invalid, arr);
+
+        if (invalid == 3) {
+            cout << "Too many invalid moves. You lost the game!\n";
+            loss = 1;
+            break;
+        }
+
+        // Add a new random power of 2 in an empty space
+        int randomxpart, randomypart;
+        do {
+            randomxpart = generateRandomNumber(gridsize);
+            randomypart = generateRandomNumber(gridsize);
+        } while (arr[randomxpart][randomypart] != 0);
+
+        arr[randomxpart][randomypart] = generatePowerOfTwo();
+
+        // Recalculate filled spaces
+        filledTiles.clear();
+        calculateFilledSpaces(arr, filledTiles, gridsize);
+
+        if (filledTiles.size() >= gridsize * gridsize) {
+            loss = 1;
+            cout << "You have lost the game!\n";
+        } else {
+            printArray(arr);
+        }
+
+    } while (loss == 0);
+
+    return 0;
+}
+
+int generateRandomNumber(int gridsize) {
+    return rand() % gridsize;
+}
+
+int generatePowerOfTwo() {
+    int randnopre = rand() % 3;
+    return pow(2, randnopre+1);
+}
+
+void printArray(const vector<vector<int>>& arr) {
+    for (const auto& row : arr) {
+        for (const auto& elem : row) {
+            cout << elem << "\t";
+        }
+        cout << endl;
+    }
+}
+
+int calculateFilledSpaces(const vector<vector<int>>& arr, vector<int>& filledTiles, int gridsize) {
+    int tilenumber;
+    for (int i = 0; i < gridsize; i++) {
+        for (int j = 0; j < gridsize; j++) {
+            if (arr[i][j] != 0) {
+                tilenumber = calculateTileNumber(i, j, gridsize);
+                filledTiles.push_back(tilenumber);
+            }
+        }
+    }
+    return filledTiles.size();
+}
+
+int calculateTileNumber(int i, int j, int gridsize) {
+    return (i * gridsize) + j + 1;
+}
+
+void shifttiles(int initialtile, int finaltile, int gridsize, int* invalid, vector<vector<int>>& arr) {
+    int tilevalue1 = initialtile - 1;
+    int tilevalue2 = finaltile - 1;
+
+    int x1 = calculatetileindexxdir(tilevalue1, gridsize);
+    int x2 = calculatetileindexxdir(tilevalue2, gridsize);
+    int y1 = calculatetileindexydir(tilevalue1, gridsize);
+    int y2 = calculatetileindexydir(tilevalue2, gridsize);
+
+    if (x1 == x2 || y1 == y2) {
+        if (x1 == x2 && y1 == y2) {
+            (*invalid)++;
+        } else if (arr[x2][y2] == arr[x1][y1] || arr[x2][y2] == 0) {
+            arr[x2][y2] += arr[x1][y1];
+            arr[x1][y1] = 0;
+        } else {
+            (*invalid)++;
+        }
+    } else {
+        (*invalid)++;
+    }
+}
+
+int calculatetileindexxdir(int tilevalue, int gridsize) {
+    return tilevalue / gridsize;
+}
+
+int calculatetileindexydir(int tilevalue, int gridsize) {
+    return tilevalue % gridsize;
+}
+
+bool wincase(const vector<vector<int>>& arr, int gridsize) {
+    int winValue = pow(2, 2 * gridsize-1);
+    for (int i = 0; i < gridsize; i++) {
+        for (int j = 0; j < gridsize; j++) {
+            if (arr[i][j] >= winValue) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
