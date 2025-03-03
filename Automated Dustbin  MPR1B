@@ -1,0 +1,99 @@
+#include <ESP32Servo.h>
+
+Servo MyServo;
+
+#define SOUND_SPEED 0.034
+#define CM_TO_INCH 0.393701
+const int servopin = 16;
+int pos = 0;
+
+class Sensor {
+  private:
+    int trig;
+    int echo;
+    int controlselect;
+
+  public:
+    int openflag = 0;
+
+    Sensor(int controlIndex, int trigpin, int echopin) {
+      trig = trigpin;
+      echo = echopin;
+      controlselect = controlIndex;
+
+      pinMode(trig, OUTPUT);
+      pinMode(echo, INPUT);
+    }
+
+    int caldistance() {
+      digitalWrite(trig, LOW);
+      delayMicroseconds(2);
+      digitalWrite(trig, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(trig, LOW);
+
+      long duration = pulseIn(echo, HIGH);
+
+      float distanceCM = duration * SOUND_SPEED / 2;
+
+      if(controlselect==0){
+        Serial.println("Ultrasonic Sensor 1 is being operated or the Smart dustbin is closed");
+      }else if(controlselect==1){
+        Serial.println("Ultrasonic Sensor 2 is being operated or the Waste detection mode is being operated");
+      }
+
+      // Ignore invalid readings (zero or extremely high values)
+      if (distanceCM == 0 || distanceCM > 400) {
+        Serial.println("Invalid reading, skipping...");
+        return openflag;
+      }
+
+      float distanceINCH = distanceCM * CM_TO_INCH;
+      if(controlselect==1){
+          Serial.print("Distance in Cm: ");
+          Serial.println(distanceCM);
+          Serial.print("Distance in Inch: ");
+          Serial.println(distanceINCH);
+      }
+      if (distanceCM < 8.00 && controlselect == 0) {
+        openflag = 1;
+        Serial.println("Lid will get opened....");
+      }
+
+      return openflag;
+    }
+};
+
+void setup() {
+  Serial.begin(9600);
+  MyServo.attach(servopin);
+}
+
+Sensor MySensor[2]{
+  Sensor(0, 26, 25),
+  Sensor(1, 19, 18)
+};
+
+void loop() {
+  MySensor[0].caldistance();
+  if (MySensor[0].openflag == 1) {
+    openclose();
+  }
+  delay(100);
+}
+
+void openclose() {
+  for (pos = 0; pos <= 180; pos++) {
+    MyServo.write(pos);
+    delay(15);
+  }
+  MySensor[0].openflag=0;
+  delay(100);
+  //MySensor[1].caldistance();
+  Serial.println("Lid will now be closed........");
+  for (pos = 180; pos >= 0; pos--) {
+    MyServo.write(pos);
+    delay(15);
+  }
+  MySensor[1].caldistance();
+}
