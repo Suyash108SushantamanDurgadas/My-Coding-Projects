@@ -1,0 +1,92 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+class Candidate {
+protected:
+    string CandidateName;
+    string PartyName;
+    int Votes;
+public:
+    void setCandidateName(string cname) {
+        CandidateName = cname;
+    }
+    void setPartyName(string pname) {
+        PartyName = pname;
+    }
+    void setVotes(int numvotes) {
+        Votes = numvotes;
+    }
+    int getVotes() {
+        return Votes;
+    }
+    string getPartyName() {
+        return PartyName;
+    }
+    string getCandidateName() {
+        return CandidateName;
+    }
+};
+
+class WinningCandidate : public Candidate {
+public:
+    int votemargin;
+    void setWinner(Candidate winner, int margin) {
+        CandidateName = winner.getCandidateName();
+        PartyName = winner.getPartyName();
+        Votes = winner.getVotes();
+        votemargin = margin;
+    }
+    void displayWinner() {
+        cout << "Winner: " << CandidateName << " from " << PartyName 
+             << " with " << Votes << " votes." << endl;
+        cout << "Vote Margin: " << votemargin << " votes." << endl;
+    }
+};
+
+int main() {
+    int numofcandidates;
+    cout << "Enter the number of candidates participating in the elections: ";
+    cin >> numofcandidates;
+
+    vector<Candidate> candidates(numofcandidates);
+    for (int i = 0; i < numofcandidates; i++) {
+        int numvotes;
+        string pname, cname;
+        cout << "Enter name of candidate " << i + 1 << ": ";
+        cin >> cname;
+        cout << "Enter party name of candidate " << i + 1 << ": ";
+        cin >> pname;
+        cout << "Enter votes received by candidate " << i + 1 << ": ";
+        cin >> numvotes;
+
+        candidates[i].setCandidateName(cname);
+        candidates[i].setPartyName(pname);
+        candidates[i].setVotes(numvotes);
+    }
+
+    int maxVotes = -1, secondMaxVotes = -1;
+    int maxIndex = -1;
+
+    for (int i = 0; i < numofcandidates; i++) {
+        int currentVotes = candidates[i].getVotes();
+        if (currentVotes > maxVotes) {
+            secondMaxVotes = maxVotes;
+            maxVotes = currentVotes;
+            maxIndex = i;
+        } else if (currentVotes > secondMaxVotes && currentVotes < maxVotes) {
+            secondMaxVotes = currentVotes;
+        }
+    }
+
+    if (maxIndex != -1) {
+        WinningCandidate winner;
+        int margin = maxVotes - secondMaxVotes;
+        winner.setWinner(candidates[maxIndex], margin);
+        winner.displayWinner();
+    } else {
+        cout << "No candidates found!" << endl;
+    }
+
+    return 0;
+}
