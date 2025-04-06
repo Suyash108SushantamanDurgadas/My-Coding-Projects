@@ -1,0 +1,58 @@
+//GAUSS ELIMINATION METHOD AUGMENTED MATRIX SOLVER.
+
+#include <stdio.h>
+
+void main() {
+    int i, j, k, row, column;
+    float temp[1000];
+    float a[1000][1000], factor;
+    printf("ENTER ROWS AND COLUMN:\n");
+    scanf("%d%d", &row, &column);
+
+    printf("\nFEED MATRIX:\n");
+    for (i = 1; i <= row; i++) {
+        for (j = 1; j <= column; j++) {
+            scanf("%f", &a[i][j]);
+        }
+    }
+
+    printf("\nPRINT MATRIX:\n");
+    for (i = 1; i <= row; i++) {
+        printf("\n");
+        for (j = 1; j <= column; j++) {
+            printf("%0.0f\t", a[i][j]);
+        }
+    }for(k=1;k<=row-1;k++){
+        for(i=k+1;i<=row;i++){
+            if(a[k][k]<a[i][k]){
+                for(j=1;j<=column;j++){
+                    temp[j]=0;
+                    temp[j]=a[k][j];
+                    a[k][j]=a[i][j];
+                    a[i][j]=temp[j];
+                }
+            }
+        }
+    }printf("\nPIVOTED MATRIX\n");
+    for (i = 1; i <= row; i++) {
+        printf("\n");
+        for (j = 1; j <= column; j++) {
+            printf("%0.2f\t", a[i][j]);
+        }
+    }
+    for (k = 1; k <= row-1; k++) {
+        for (i = k + 1; i <= row; i++) {
+              factor = a[i][k] / a[k][k];
+            for (j = 1; j <= column; j++) {
+                a[i][j] = a[i][j] - factor * a[k][j];
+            }
+        }
+    }
+    printf("\nUPPER TRIANGULARISED MATRIX\n");
+    for (i = 1; i <= row; i++) {
+        printf("\n");
+        for (j = 1; j <= column; j++) {
+            printf("%0.2f\t", a[i][j]);
+        }
+    }
+}
