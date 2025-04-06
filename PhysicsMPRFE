@@ -44,6 +44,7 @@ void loop()
   }
 
   // Ultrasonic sensor code
+//Detecting whether the obstacle based on threshold
   if (distanceCm < 40) { // You can Change the value 
     digitalWrite(5, HIGH);  // Buzzer ON
     digitalWrite(6, HIGH);  // LED ON 
