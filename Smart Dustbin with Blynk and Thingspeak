@@ -1,0 +1,141 @@
+#define BLYNK_TEMPLATE_ID "TMPL3B1_-ZU35"
+#define BLYNK_TEMPLATE_NAME "Automated Waste Manager"
+
+#include <Servo.h>
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+#include <ESP8266HTTPClient.h>
+#include <ThingSpeak.h>
+
+#define BLYNK_PRINT Serial  
+
+char auth[] = "OOGw_UmLyrBRTVS8RA11grbiPjQdkskd";
+char ssid[] = "POCO M3";  
+char pass[] = "192837465";    
+
+Servo MyServo;
+
+#define TRIG_1 D8   
+#define TRIG_2 D2   
+#define ECHO_PIN D7
+#define Buzzerpin D5  
+
+int SERVO_PIN = D6;
+int userthreshold = 20;
+int fillthreshold = 8;
+bool lidOpen = false;
+bool fillAlert = false;
+
+unsigned long lastThingSpeakTime = 0;
+
+WiFiClient client;
+
+// ✅ Your ThingSpeak channel details
+unsigned long myChannelNumber = 2884544;
+const char *myWriteAPIKey = "52GGKW3B87JOVV5Q";
+
+void setup() {
+    Serial.begin(115200);
+    Blynk.begin(auth, ssid, pass);
+    ThingSpeak.begin(client); // Init ThingSpeak
+
+    pinMode(TRIG_1, OUTPUT);
+    pinMode(TRIG_2, OUTPUT);
+    pinMode(ECHO_PIN, INPUT_PULLUP);
+
+    digitalWrite(TRIG_1, LOW);
+    digitalWrite(TRIG_2, LOW);
+    
+    MyServo.attach(SERVO_PIN);
+    MyServo.write(0);
+}
+
+long getDistance(int trigPin) {
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+
+    long duration = pulseIn(ECHO_PIN, HIGH, 40000);
+    if (duration == 0) return -1;
+
+    return duration * 0.034 / 2; 
+}
+
+void openLid() {
+    if (!lidOpen) {
+        Serial.println("Opening lid...");
+        MyServo.write(180);
+        lidOpen = true;
+        Blynk.virtualWrite(V2, 1);
+    }
+}
+
+void closeLid() {
+    if (lidOpen) {
+        Serial.println("Closing lid...");
+        MyServo.write(5);  // ✅ Safer angle than -10 to avoid jitter
+        lidOpen = false;
+        Blynk.virtualWrite(V2, 0);
+    }
+}
+
+void loop() {
+    Blynk.run();
+
+    long distance1 = getDistance(TRIG_1);
+    long distance2 = getDistance(TRIG_2);
+
+    Serial.print("User Sensor: "); Serial.println(distance1);
+    Serial.print("Fill Sensor: "); Serial.println(distance2);
+
+    Blynk.virtualWrite(V0, distance1);
+    Blynk.virtualWrite(V1, distance2);
+
+    // ⚠ Bin Full Logic
+    if (distance2 > 0 && distance2 < fillthreshold) {
+        fillAlert = true;
+        Serial.println("⚠ Bin Full! Auto-lid disabled.");
+        Blynk.virtualWrite(V3, 255); // Red LED ON
+    } else {
+        fillAlert = false;
+        Blynk.virtualWrite(V3, 0);   // LED OFF
+    }
+
+    // 🚀 Auto lid logic
+    if (!fillAlert) {
+        if (distance1 > 0 && distance1 < userthreshold) {
+            openLid();
+        } else {
+            closeLid();
+        }
+    }
+
+    // 📡 Send to ThingSpeak every 15 seconds
+    if (millis() - lastThingSpeakTime >= 15000) {
+        ThingSpeak.setField(1, distance1);
+        ThingSpeak.setField(2, distance2);
+        int x = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+        if (x == 200) {
+            Serial.println("✅ ThingSpeak update successful.");
+        } else {
+            Serial.println("❌ ThingSpeak update failed. HTTP error: " + String(x));
+        }
+        lastThingSpeakTime = millis();
+    }
+
+    delay(500);
+}
+
+// 🧠 Manual Blynk control
+BLYNK_WRITE(V2) {
+    int pinValue = param.asInt();
+    if (pinValue == 1) {
+        openLid();
+        delay(2000);
+    } else {
+        closeLid();
+        delay(1000);
+    }
+}
