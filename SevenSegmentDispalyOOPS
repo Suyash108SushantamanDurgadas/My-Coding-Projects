@@ -1,0 +1,67 @@
+int Chargen[8][8] = {
+  {1,1,1,1,1,1,0,0},
+  {0,1,1,0,0,0,0,0},  
+  {1,1,0,1,1,0,1,0},  
+  {1,1,1,1,0,0,1,0},    
+  {1,1,1,0,1,1,1,0},
+  {0,0,1,1,1,1,1,0},
+  {1,0,0,1,1,1,0,0},
+  {0,1,1,1,1,0,1,0}
+};
+
+class Sevensegmentdisplay {
+  public:
+    int Segment;
+    int Sevensegmentpin[8];
+
+    void Displaynum(int digit) {
+      for (int s = 0; s < 8; s++) {
+        digitalWrite(Sevensegmentpin[s], Chargen[digit][s]); 
+      }
+    }
+  void Segmentoff(){
+    for (int s = 0; s < 8; s++) {
+        digitalWrite(Sevensegmentpin[s], LOW); 
+      }
+  }
+
+};
+
+int digit = 0;
+int count = 0;
+Sevensegmentdisplay display[4];
+
+void setup() {
+  for (int i = 0; i < 4; i++) {
+    display[i].Segment = 10 + i;
+    
+    int pins[8] = {2, 3, 4, 5, 6, 7, 8, 9};
+    for (int j = 0; j < 8; j++) {
+      display[i].Sevensegmentpin[j] = pins[j];
+    }
+
+    pinMode(display[i].Segment, OUTPUT);
+    digitalWrite(display[i].Segment, LOW);
+    
+    for (int k = 0; k < 8; k++) {
+      pinMode(display[i].Sevensegmentpin[k], OUTPUT);
+    }
+  }
+}
+
+void loop() {
+  int displaydel=3;
+  int whilecycle=1500;
+  while(count<whilecycle/displaydel){
+   for (int i = 0; i < 4; i++) {
+    digitalWrite(display[i].Segment, HIGH);
+    display[i].Displaynum(digit+i);
+    digitalWrite(display[i].Segment, LOW);
+    display[i].Segmentoff();
+   }
+    delay(displaydel);
+    count++;
+  }
+  digit=(digit+4)%8;
+  count=count%200;
+}
